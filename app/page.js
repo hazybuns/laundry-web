@@ -113,67 +113,67 @@ export default function Login() {
 	};
 
 	const handleRegistration = async () => {
-    if (!isPasswordStrong(pass)) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Weak Password',
-            text: 'Password must be at least 8 characters long and include uppercase letters, lowercase letters, numbers, and special characters.',
-            confirmButtonColor: '#FFA500',
-        });
-        return;
-    }
+		if (!isPasswordStrong(pass)) {
+			Swal.fire({
+				icon: 'error',
+				title: 'Weak Password',
+				text: 'Password must be at least 8 characters long and include uppercase letters, lowercase letters, numbers, and special characters.',
+				confirmButtonColor: '#FFA500',
+			});
+			return;
+		}
 
-    const url = 'http://localhost/flutter/laundry/connection.php';
+		const url = 'http://localhost/flutter/laundry/connection.php';
 
-    const formData = new FormData();
-    formData.append('action', 'checkEmail');
-    formData.append('email', email);
+		const formData = new FormData();
+		formData.append('action', 'checkEmail');
+		formData.append('email', email);
 
-    try {
-        const emailCheckResponse = await axios.post(url, formData);
-        if (emailCheckResponse.data.exists) {
-            setShow(false); // Close the modal before showing the alert
-            Swal.fire({
-                icon: 'error',
-                title: 'Email Already Exists',
-                text: 'The email address is already registered. Please use a different email.',
-                confirmButtonColor: '#FFA500',
-            });
-            return;
-        }
+		try {
+			const emailCheckResponse = await axios.post(url, formData);
+			if (emailCheckResponse.data.exists) {
+				setShow(false); // Close the modal before showing the alert
+				Swal.fire({
+					icon: 'error',
+					title: 'Email Already Exists',
+					text: 'The email address is already registered. Please use a different email.',
+					confirmButtonColor: '#FFA500',
+				});
+				return;
+			}
 
-        formData.set('action', 'register');
-        formData.append('name', name);
-        formData.append('password', pass);
-        formData.append('role', 'user'); // Always set role to "user"
+			formData.set('action', 'register');
+			formData.append('name', name);
+			formData.append('password', pass);
+			formData.append('role', 'user'); // Always set role to "user"
 
-        const response = await axios.post(url, formData);
-        if (response.data.message === 'User registered successfully') {
-            Swal.fire({
-                icon: 'success',
-                title: 'Registration Successful!',
-                text: 'You have successfully registered as a user!',
-                confirmButtonColor: '#FFA500',
-            });
-            setShow(false); // Close the modal after successful registration
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Registration Failed',
-                text: response.data.error || 'Please try again!',
-                confirmButtonColor: '#FFA500',
-            });
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'An Error Occurred',
-            text: 'Something went wrong. Please try again later.',
-            confirmButtonColor: '#FFA500',
-        });
-    }
-};
+			const response = await axios.post(url, formData);
+			if (response.data.message === 'User registered successfully') {
+				Swal.fire({
+					icon: 'success',
+					title: 'Registration Successful!',
+					text: 'You have successfully registered as a user!',
+					confirmButtonColor: '#FFA500',
+				});
+				setShow(false); // Close the modal after successful registration
+			} else {
+				Swal.fire({
+					icon: 'error',
+					title: 'Registration Failed',
+					text: response.data.error || 'Please try again!',
+					confirmButtonColor: '#FFA500',
+				});
+			}
+		} catch (error) {
+			console.error('Error:', error);
+			Swal.fire({
+				icon: 'error',
+				title: 'An Error Occurred',
+				text: 'Something went wrong. Please try again later.',
+				confirmButtonColor: '#FFA500',
+			});
+		}
+	};
 
 	const isPasswordStrong = (password) => {
 		const minLength = 8;
