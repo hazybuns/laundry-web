@@ -48,7 +48,7 @@ export default function Login() {
 	const [role, setRole] = useState('user');
 	const [loading, setLoading] = useState(false);
 	const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-	const [adminAlert, setAdminAlert] = useState({ open: false, message: '' });
+	const [userAlert, setUserAlert] = useState({ open: false, message: '' });
 
 	const handleMouseEnter = () => setHover(true);
 	const handleMouseLeave = () => setHover(false);
@@ -80,25 +80,22 @@ export default function Login() {
 			const data = response.data;
 
 			if (data.message === 'Login successful') {
-				// Set auth-token cookie here
-				document.cookie = `auth-token=${data.token}; path=/;`;
+				if (data.role === 'admin') {
+					// Set auth-token cookie here if not set by the server
+					document.cookie = `auth-token=${data.token}; path=/;`;
 
-				if (data.role === 'user') {
-					setSnackbar({ open: true, message: 'Login Successful! Redirecting...', severity: 'success' });
+					setSnackbar({ open: true, message: 'Admin Login Successful! Redirecting...', severity: 'success' });
 					localStorage.setItem('userId', data.id);
 
 					setTimeout(() => {
-						router.push(`/user?userId=${data.id}`);
+						router.push(`/home?email=${email}&role=${data.role}&id=${data.id}`);
 						setLoading(false);
 					}, 2000);
-				} else if (data.role === 'admin') {
-					setAdminAlert({
+				} else if (data.role === 'user') {
+					setUserAlert({
 						open: true,
-						message: 'Admin login is not allowed here. Please use the admin login page.',
+						message: 'This login page is for administrators only. User accounts are not allowed to login here.',
 					});
-					setLoading(false);
-				} else {
-					setSnackbar({ open: true, message: 'Invalid user role. Please contact support.', severity: 'error' });
 					setLoading(false);
 				}
 			} else {
@@ -113,67 +110,53 @@ export default function Login() {
 	};
 
 	const handleRegistration = async () => {
-    if (!isPasswordStrong(pass)) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Weak Password',
-            text: 'Password must be at least 8 characters long and include uppercase letters, lowercase letters, numbers, and special characters.',
-            confirmButtonColor: '#FFA500',
-        });
-        return;
-    }
+		if (!isPasswordStrong(pass)) {
+			Swal.fire({
+				icon: 'error',
+				title: 'Weak Password',
+				text: 'Password must be at least 8 characters long and include uppercase letters, lowercase letters, numbers, and special characters.',
+				confirmButtonColor: '#FFA500',
+			});
+			return;
+		}
 
-    const url = 'http://localhost/flutter/laundry/connection.php';
+		const url = 'http://localhost/flutter/laundry/connection.php';
 
-    const formData = new FormData();
-    formData.append('action', 'checkEmail');
-    formData.append('email', email);
+		const formData = new FormData();
+		formData.append('action', 'register');
+		formData.append('name', name);
+		formData.append('email', email);
+		formData.append('password', pass);
+		formData.append('role', role);
 
-    try {
-        const emailCheckResponse = await axios.post(url, formData);
-        if (emailCheckResponse.data.exists) {
-            setShow(false); // Close the modal before showing the alert
-            Swal.fire({
-                icon: 'error',
-                title: 'Email Already Exists',
-                text: 'The email address is already registered. Please use a different email.',
-                confirmButtonColor: '#FFA500',
-            });
-            return;
-        }
-
-        formData.set('action', 'register');
-        formData.append('name', name);
-        formData.append('password', pass);
-        formData.append('role', 'user'); // Always set role to "user"
-
-        const response = await axios.post(url, formData);
-        if (response.data.message === 'User registered successfully') {
-            Swal.fire({
-                icon: 'success',
-                title: 'Registration Successful!',
-                text: 'You have successfully registered as a user!',
-                confirmButtonColor: '#FFA500',
-            });
-            setShow(false); // Close the modal after successful registration
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Registration Failed',
-                text: response.data.error || 'Please try again!',
-                confirmButtonColor: '#FFA500',
-            });
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'An Error Occurred',
-            text: 'Something went wrong. Please try again later.',
-            confirmButtonColor: '#FFA500',
-        });
-    }
-};
+		try {
+			const response = await axios.post(url, formData);
+			if (response.data.message === 'User registered successfully') {
+				Swal.fire({
+					icon: 'success',
+					title: 'Registration Successful!',
+					text: 'You have successfully registered!',
+					confirmButtonColor: '#FFA500',
+				});
+				setShow(false); // Close the modal after successful registration
+			} else {
+				Swal.fire({
+					icon: 'error',
+					title: 'Registration Failed',
+					text: response.data.error || 'Please try again!',
+					confirmButtonColor: '#FFA500',
+				});
+			}
+		} catch (error) {
+			console.error('Error:', error);
+			Swal.fire({
+				icon: 'error',
+				title: 'An Error Occurred',
+				text: 'Something went wrong. Please try again later.',
+				confirmButtonColor: '#FFA500',
+			});
+		}
+	};
 
 	const isPasswordStrong = (password) => {
 		const minLength = 8;
@@ -262,7 +245,7 @@ export default function Login() {
 						<CardContent sx={{ p: 4 }}>
 							<Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
 								<Typography component='h1' variant='h4' fontWeight='bold' color='primary.main' gutterBottom>
-									Welcome Back!
+									ADMIN LOGIN
 								</Typography>
 								<LaundryIcon sx={{ fontSize: 64, color: 'primary.main', mt: 2 }} />
 							</Box>
@@ -407,24 +390,6 @@ export default function Login() {
 					</DialogActions>
 				</Dialog>
 
-				{/* Admin Login Alert */}
-				{adminAlert.open && (
-					<Alert
-						severity='error'
-						onClose={() => setAdminAlert({ ...adminAlert, open: false })}
-						sx={{
-							position: 'fixed',
-							top: 16,
-							left: '50%',
-							transform: 'translateX(-50%)',
-							width: 'auto',
-							maxWidth: '90%',
-						}}
-					>
-						{adminAlert.message}
-					</Alert>
-				)}
-
 				{/* Snackbar for notifications */}
 				<Snackbar
 					open={snackbar.open}
@@ -440,6 +405,24 @@ export default function Login() {
 						{snackbar.message}
 					</Alert>
 				</Snackbar>
+
+				{/* User Login Alert */}
+				{userAlert.open && (
+					<Alert
+						severity='warning'
+						onClose={() => setUserAlert({ ...userAlert, open: false })}
+						sx={{
+							position: 'fixed',
+							top: 16,
+							left: '50%',
+							transform: 'translateX(-50%)',
+							width: 'auto',
+							maxWidth: '90%',
+						}}
+					>
+						{userAlert.message}
+					</Alert>
+				)}
 			</Box>
 		</ThemeProvider>
 	);
